@@ -1,9 +1,12 @@
+"""Minimal SPI driver for a 200x200 Waveshare 1.54-inch e-paper display."""
+
 from machine import Pin
 import framebuf
 import time
 
 
 class EPD_1in54(framebuf.FrameBuffer):
+    """Framebuffer-backed driver for the 1.54-inch monochrome e-paper panel."""
     WIDTH = 200
     HEIGHT = 200
 
@@ -25,6 +28,7 @@ class EPD_1in54(framebuf.FrameBuffer):
     TERMINATE_FRAME_READ_WRITE = 0xFF
 
     def __init__(self, spi, cs, dc, rst, busy):
+        """Create and initialize the e-paper display driver."""
         self.spi = spi
         self.cs = cs
         self.dc = dc
@@ -42,15 +46,18 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._init_display()
 
     def _delay_ms(self, delay):
+        """Pause briefly between controller operations."""
         time.sleep_ms(delay)
 
     def _send_command(self, command):
+        """Send a single command byte to the display controller."""
         self.dc.value(0)
         self.cs.value(0)
         self.spi.write(bytearray([command]))
         self.cs.value(1)
 
     def _send_data(self, data):
+        """Send one or more data bytes to the display controller."""
         self.dc.value(1)
         self.cs.value(0)
         if isinstance(data, int):
@@ -60,10 +67,12 @@ class EPD_1in54(framebuf.FrameBuffer):
         self.cs.value(1)
 
     def _wait_until_idle(self):
+        """Block until the display controller reports it is idle."""
         while self.busy.value() == 1:
             self._delay_ms(10)
 
     def _hardware_reset(self):
+        """Pulse the reset line to restart the display controller."""
         self.rst.value(1)
         self._delay_ms(20)
         self.rst.value(0)
@@ -72,6 +81,7 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._delay_ms(20)
 
     def _set_window(self, x_start, y_start, x_end, y_end):
+        """Set the active RAM window on the display controller."""
         self._send_command(self.SET_RAM_X_ADDRESS_START_END_POSITION)
         self._send_data(x_start >> 3)
         self._send_data(x_end >> 3)
@@ -83,6 +93,7 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._send_data((y_end >> 8) & 0xFF)
 
     def _set_cursor(self, x, y):
+        """Move the controller RAM cursor to the given pixel position."""
         self._send_command(self.SET_RAM_X_ADDRESS_COUNTER)
         self._send_data(x >> 3)
 
@@ -92,6 +103,7 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._wait_until_idle()
 
     def _init_display(self):
+        """Run the controller initialization sequence."""
         self._hardware_reset()
         self._wait_until_idle()
 
@@ -126,9 +138,11 @@ class EPD_1in54(framebuf.FrameBuffer):
         self.display()
 
     def clear(self, color=0xFF):
+        """Fill the local framebuffer with the requested color."""
         self.buffer[:] = bytes([color]) * len(self.buffer)
 
     def display(self):
+        """Transfer the local framebuffer to the e-paper panel."""
         self._set_window(0, 0, self.WIDTH - 1, self.HEIGHT - 1)
         self._set_cursor(0, 0)
 
@@ -142,9 +156,11 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._wait_until_idle()
 
     def sleep(self):
+        """Put the display controller into deep sleep mode."""
         self._send_command(self.DEEP_SLEEP_MODE)
         self._send_data(0x01)
         self._delay_ms(50)
 
     def wake(self):
+        """Wake the display by re-running its initialization sequence."""
         self._init_display()
