@@ -9,6 +9,9 @@ class EPD_1in54(framebuf.FrameBuffer):
     """Framebuffer-backed driver for the 1.54-inch monochrome e-paper panel."""
     WIDTH = 200
     HEIGHT = 200
+    POWER_ON_DELAY_MS = 200
+    RESET_LOW_MS = 10
+    RESET_HIGH_MS = 200
 
     DRIVER_OUTPUT_CONTROL = 0x01
     BOOSTER_SOFT_START_CONTROL = 0x0C
@@ -43,6 +46,7 @@ class EPD_1in54(framebuf.FrameBuffer):
         self.buffer = bytearray(self.WIDTH * self.HEIGHT // 8)
         super().__init__(self.buffer, self.WIDTH, self.HEIGHT, framebuf.MONO_HLSB)
 
+        self._delay_ms(self.POWER_ON_DELAY_MS)
         self._init_display()
 
     def _delay_ms(self, delay):
@@ -74,11 +78,11 @@ class EPD_1in54(framebuf.FrameBuffer):
     def _hardware_reset(self):
         """Pulse the reset line to restart the display controller."""
         self.rst.value(1)
-        self._delay_ms(20)
+        self._delay_ms(self.RESET_HIGH_MS)
         self.rst.value(0)
-        self._delay_ms(2)
+        self._delay_ms(self.RESET_LOW_MS)
         self.rst.value(1)
-        self._delay_ms(20)
+        self._delay_ms(self.RESET_HIGH_MS)
 
     def _set_window(self, x_start, y_start, x_end, y_end):
         """Set the active RAM window on the display controller."""
@@ -135,7 +139,6 @@ class EPD_1in54(framebuf.FrameBuffer):
         self._set_window(0, 0, self.WIDTH - 1, self.HEIGHT - 1)
         self._set_cursor(0, 0)
         self.clear()
-        self.display()
 
     def clear(self, color=0xFF):
         """Fill the local framebuffer with the requested color."""

@@ -6,6 +6,8 @@ from epd_1in54 import EPD_1in54
 from sht31 import SHT31
 
 DONE_PIN = 15
+LED_PIN = "LED"
+STARTUP_DELAY_MS = 1500
 
 
 def draw_reading(epd, temperature, humidity, status="OK"):
@@ -48,11 +50,34 @@ def signal_done(done_pin):
     done_pin.value(0)
 
 
+def refresh_display(epd, led, render, *args):
+    """Turn on the LED during a display refresh, then turn it off afterward."""
+    # Temporary debug indicator: comment out these LED lines later if you do not need them.
+    led.value(1)
+    render(epd, *args)
+    led.value(0)
+
+
+def startup_wait(led, delay_ms):
+    """Pause after power-up so peripherals can settle before initialization."""
+    # Temporary debug indicator: comment out this LED blink later if you do not need it.
+    end_time = time.ticks_add(time.ticks_ms(), delay_ms)
+    led_state = 0
+    while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+        led_state = 0 if led_state else 1
+        led.value(led_state)
+        time.sleep_ms(150)
+    led.value(0)
+
+
 def main():
     """Initialize peripherals, update the display, and notify the TPL5110."""
     i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=100000)
     sensor = None
     done_pin = Pin(DONE_PIN, Pin.OUT, value=0)
+    led = Pin(LED_PIN, Pin.OUT, value=0)
+
+    startup_wait(led, STARTUP_DELAY_MS)
 
     spi = SPI(
         1,
@@ -76,7 +101,7 @@ def main():
         if sensor is None:
             sensor = SHT31(i2c)
         temperature, humidity = sensor.read()
-        draw_reading(epd, temperature, humidity)
+        refresh_display(epd, led, draw_reading, temperature, humidity)
     except Exception as exc:
         scan = i2c.scan()
         detail = "I2C: none"
@@ -84,7 +109,7 @@ def main():
             detail = "I2C: {}".format(",".join("0x{:02X}".format(addr) for addr in scan[:3]))
         print("SHT31 error:", exc)
         print("I2C scan:", [hex(addr) for addr in scan])
-        draw_error(epd, str(exc), detail)
+        refresh_display(epd, led, draw_error, str(exc), detail)
 
     epd.sleep()
     signal_done(done_pin)
