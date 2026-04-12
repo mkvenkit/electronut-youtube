@@ -5,7 +5,7 @@ import time
 from epd_1in54 import EPD_1in54
 from sht31 import SHT31
 
-DONE_PIN = 15
+DONE_PIN = 28
 LED_PIN = "LED"
 STARTUP_DELAY_MS = 1500
 
