@@ -72,7 +72,7 @@ def startup_wait(led, delay_ms):
 
 def main():
     """Initialize peripherals, update the display, and notify the TPL5110."""
-    i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=100000)
+    i2c = I2C(0, scl=Pin(21), sda=Pin(20), freq=100000)
     sensor = None
     done_pin = Pin(DONE_PIN, Pin.OUT, value=0)
     led = Pin(LED_PIN, Pin.OUT, value=0)
