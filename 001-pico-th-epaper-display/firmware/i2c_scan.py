@@ -1,4 +1,4 @@
-"""Standalone I2C scanner for checking devices on GP4/GP5."""
+"""Standalone I2C scanner for checking devices on GP20/GP21."""
 
 from machine import I2C, Pin
 import time
@@ -14,9 +14,9 @@ def format_devices(devices):
 
 def main():
     """Continuously scan the I2C bus and print any detected addresses."""
-    i2c = I2C(0, scl=Pin(5), sda=Pin(4), freq=100000)
+    i2c = I2C(0, scl=Pin(21), sda=Pin(20), freq=100000)
 
-    print("Scanning I2C bus on GP4/GP5...")
+    print("Scanning I2C bus on GP20/GP21...")
     while True:
         devices = i2c.scan()
         print(format_devices(devices))
