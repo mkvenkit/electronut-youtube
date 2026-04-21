@@ -53,9 +53,9 @@ def signal_done(done_pin):
 def refresh_display(epd, led, render, *args):
     """Turn on the LED during a display refresh, then turn it off afterward."""
     # Temporary debug indicator: comment out these LED lines later if you do not need them.
-    led.value(1)
+    #led.value(1)
     render(epd, *args)
-    led.value(0)
+    #led.value(0)
 
 
 def startup_wait(led, delay_ms):
@@ -77,7 +77,7 @@ def main():
     done_pin = Pin(DONE_PIN, Pin.OUT, value=0)
     led = Pin(LED_PIN, Pin.OUT, value=0)
 
-    startup_wait(led, STARTUP_DELAY_MS)
+    #startup_wait(led, STARTUP_DELAY_MS)
 
     spi = SPI(
         1,
