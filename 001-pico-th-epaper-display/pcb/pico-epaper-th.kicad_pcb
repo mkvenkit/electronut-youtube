@@ -431,7 +431,7 @@
 				(xyz 1 1 1)
 			)
 			(rotate
-				(xyz -0 -0 -0)
+				(xyz 180 -0 -0)
 			)
 		)
 		(model "${KIPRJMOD}/Wavehsare 1.54in e-paper - Module.stp"
@@ -682,7 +682,7 @@
 				)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "0.1u"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "abd1be70-7176-488e-8801-0921f703fe97")
@@ -949,7 +949,7 @@
 				)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "10u"
 			(at 0 1.43 90)
 			(layer "F.Fab")
 			(uuid "8e263b59-686a-4aa1-9265-b7afa39cdae1")
@@ -4951,7 +4951,7 @@
 				)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "0.1u"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "002f7557-5b5d-4735-ac52-a0f75f15e8ec")
@@ -5267,7 +5267,7 @@
 				)
 			)
 		)
-		(property "Value" "10u"
+		(property "Value" "0.1u"
 			(at 0 1.43 90)
 			(layer "F.Fab")
 			(uuid "a3248c16-3989-41f8-9407-547b7c9789bf")
@@ -5796,17 +5796,6 @@
 				(xyz -0 -0 -0)
 			)
 		)
-		(model "${KIPRJMOD}/AABattery Holder.stp"
-			(offset
-				(xyz -48 -57 -10)
-			)
-			(scale
-				(xyz 1 1 1)
-			)
-			(rotate
-				(xyz -0 -180 -0)
-			)
-		)
 	)
 	(gr_rect
 		(start 114.6 91.3)
@@ -5937,6 +5926,32 @@
 				(thickness 0.1)
 			)
 			(justify left bottom)
+		)
+	)
+	(gr_text "Low Power T/H ePaper Display"
+		(at 117.4 141 0)
+		(layer "F.SilkS")
+		(uuid "b523219b-0c44-4b0f-9dbe-3627ddb3604c")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "electronut.in"
+		(at 166.2 101.6 90)
+		(layer "B.SilkS")
+		(uuid "41df0eea-98c4-4485-b091-1fbc4d4caad2")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom mirror)
 		)
 	)
 	(segment

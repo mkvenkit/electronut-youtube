@@ -7,7 +7,7 @@ from sht31 import SHT31
 
 DONE_PIN = 28
 LED_PIN = "LED"
-STARTUP_DELAY_MS = 1500
+STARTUP_DELAY_MS = 1000
 
 
 def draw_reading(epd, temperature, humidity, status="OK"):
@@ -77,7 +77,7 @@ def main():
     done_pin = Pin(DONE_PIN, Pin.OUT, value=0)
     led = Pin(LED_PIN, Pin.OUT, value=0)
 
-    #startup_wait(led, STARTUP_DELAY_MS)
+    startup_wait(led, STARTUP_DELAY_MS)
 
     spi = SPI(
         1,
