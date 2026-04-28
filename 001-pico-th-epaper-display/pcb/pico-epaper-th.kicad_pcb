@@ -96,7 +96,7 @@
 			(plot_on_all_layers_selection 0x00000000_00000000_00000000_00000000)
 			(disableapertmacros no)
 			(usegerberextensions no)
-			(usegerberattributes yes)
+			(usegerberattributes no)
 			(usegerberadvancedattributes yes)
 			(creategerberjobfile yes)
 			(dashed_line_dash_ratio 12)
@@ -123,9 +123,9 @@
 			(subtractmaskfromsilk no)
 			(outputformat 1)
 			(mirror no)
-			(drillshape 1)
+			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "")
+			(outputdirectory "gerbers")
 		)
 	)
 	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical"
@@ -7435,6 +7435,19 @@
 				(bold yes)
 			)
 			(justify left bottom)
+		)
+	)
+	(gr_text "Ver 0.1"
+		(at 168.3 102.1 90)
+		(layer "B.SilkS")
+		(uuid "8651b3e9-bf44-4bcf-9ffb-db43cbe3737e")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom mirror)
 		)
 	)
 	(segment
