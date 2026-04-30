@@ -45,6 +45,10 @@ class EPD_1in54(framebuf.FrameBuffer):
 
         self.buffer = bytearray(self.WIDTH * self.HEIGHT // 8)
         super().__init__(self.buffer, self.WIDTH, self.HEIGHT, framebuf.MONO_HLSB)
+        self._rotated_buffer = bytearray(self.WIDTH * self.HEIGHT // 8)
+        self._rotated_framebuf = framebuf.FrameBuffer(
+            self._rotated_buffer, self.WIDTH, self.HEIGHT, framebuf.MONO_HLSB
+        )
 
         self._delay_ms(self.POWER_ON_DELAY_MS)
         self._init_display()
@@ -144,13 +148,21 @@ class EPD_1in54(framebuf.FrameBuffer):
         """Fill the local framebuffer with the requested color."""
         self.buffer[:] = bytes([color]) * len(self.buffer)
 
+    def _rotate_buffer_clockwise(self):
+        """Rotate the framebuffer 90 degrees clockwise for display output."""
+        self._rotated_buffer[:] = b"\xFF" * len(self._rotated_buffer)
+        for y in range(self.HEIGHT):
+            for x in range(self.WIDTH):
+                self._rotated_framebuf.pixel(self.WIDTH - 1 - y, x, self.pixel(x, y))
+
     def display(self):
         """Transfer the local framebuffer to the e-paper panel."""
+        self._rotate_buffer_clockwise()
         self._set_window(0, 0, self.WIDTH - 1, self.HEIGHT - 1)
         self._set_cursor(0, 0)
 
         self._send_command(self.WRITE_RAM)
-        self._send_data(self.buffer)
+        self._send_data(self._rotated_buffer)
 
         self._send_command(self.DISPLAY_UPDATE_CONTROL_2)
         self._send_data(0xF7)
