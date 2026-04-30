@@ -8,25 +8,162 @@ from sht31 import SHT31
 DONE_PIN = 28
 LED_PIN = "LED"
 STARTUP_DELAY_MS = 1000
+HISTORY_FILE = "history.csv"
+HISTORY_LENGTH = 16
+MID_X = 100
+MID_Y = 100
+QUADRANT_SIZE = 100
+SEGMENT_THICKNESS = 7
+DIGIT_WIDTH = 30
+DIGIT_HEIGHT = 56
+DIGIT_SPACING = 6
+GRAPH_PADDING = 6
+GRAPH_LABEL_HEIGHT = 10
+
+SEGMENTS = {
+    "-": "g",
+    "0": "abcfed",
+    "1": "bc",
+    "2": "abged",
+    "3": "abgcd",
+    "4": "fgbc",
+    "5": "afgcd",
+    "6": "afgecd",
+    "7": "abc",
+    "8": "abcdefg",
+    "9": "abcfgd",
+}
 
 
-def draw_reading(epd, temperature, humidity, status="OK"):
-    """Render the normal temperature and humidity view."""
+def load_history():
+    """Load temperature and humidity history from local storage."""
+    readings = []
+    try:
+        with open(HISTORY_FILE, "r") as history_file:
+            for line in history_file:
+                parts = line.strip().split(",")
+                if len(parts) != 2:
+                    continue
+                try:
+                    readings.append((float(parts[0]), float(parts[1])))
+                except ValueError:
+                    continue
+    except OSError:
+        return []
+
+    if len(readings) > HISTORY_LENGTH:
+        return readings[-HISTORY_LENGTH:]
+    return readings
+
+
+def save_history(readings):
+    """Persist the latest readings so the next wake can draw trend lines."""
+    trimmed = readings[-HISTORY_LENGTH:]
+    with open(HISTORY_FILE, "w") as history_file:
+        for temperature, humidity in trimmed:
+            history_file.write("{:.2f},{:.2f}\n".format(temperature, humidity))
+
+
+def append_history(temperature, humidity):
+    """Append the latest sample to the stored reading history."""
+    readings = load_history()
+    readings.append((temperature, humidity))
+    save_history(readings)
+    return readings[-HISTORY_LENGTH:]
+
+
+def draw_grid(epd):
+    """Draw the 2x2 quadrant layout."""
+    epd.rect(0, 0, epd.WIDTH, epd.HEIGHT, 0x00)
+    epd.vline(MID_X, 0, epd.HEIGHT, 0x00)
+    epd.hline(0, MID_Y, epd.WIDTH, 0x00)
+
+
+def draw_segment(epd, x, y, segment, color=0x00):
+    """Draw one seven-segment bar for a large numeric glyph."""
+    if segment == "a":
+        epd.fill_rect(x + SEGMENT_THICKNESS, y, DIGIT_WIDTH - (2 * SEGMENT_THICKNESS), SEGMENT_THICKNESS, color)
+    elif segment == "b":
+        epd.fill_rect(x + DIGIT_WIDTH - SEGMENT_THICKNESS, y + SEGMENT_THICKNESS, SEGMENT_THICKNESS, (DIGIT_HEIGHT // 2) - SEGMENT_THICKNESS, color)
+    elif segment == "c":
+        epd.fill_rect(x + DIGIT_WIDTH - SEGMENT_THICKNESS, y + (DIGIT_HEIGHT // 2), SEGMENT_THICKNESS, (DIGIT_HEIGHT // 2) - SEGMENT_THICKNESS, color)
+    elif segment == "d":
+        epd.fill_rect(x + SEGMENT_THICKNESS, y + DIGIT_HEIGHT - SEGMENT_THICKNESS, DIGIT_WIDTH - (2 * SEGMENT_THICKNESS), SEGMENT_THICKNESS, color)
+    elif segment == "e":
+        epd.fill_rect(x, y + (DIGIT_HEIGHT // 2), SEGMENT_THICKNESS, (DIGIT_HEIGHT // 2) - SEGMENT_THICKNESS, color)
+    elif segment == "f":
+        epd.fill_rect(x, y + SEGMENT_THICKNESS, SEGMENT_THICKNESS, (DIGIT_HEIGHT // 2) - SEGMENT_THICKNESS, color)
+    elif segment == "g":
+        epd.fill_rect(x + SEGMENT_THICKNESS, y + (DIGIT_HEIGHT // 2) - (SEGMENT_THICKNESS // 2), DIGIT_WIDTH - (2 * SEGMENT_THICKNESS), SEGMENT_THICKNESS, color)
+
+
+def draw_big_value(epd, x, y, value, label, unit):
+    """Draw a large rounded reading with a compact quadrant label."""
+    text = str(int(round(value)))
+    total_width = (len(text) * DIGIT_WIDTH) + ((len(text) - 1) * DIGIT_SPACING)
+    digit_x = x + max(6, (QUADRANT_SIZE - total_width) // 2)
+
+    epd.text(label, x + 6, y + 6, 0x00)
+    for character in text:
+        for segment in SEGMENTS.get(character, ""):
+            draw_segment(epd, digit_x, y + 24, segment)
+        digit_x += DIGIT_WIDTH + DIGIT_SPACING
+
+
+def draw_graph(epd, x, y, values, label, unit):
+    """Draw a sparkline-style graph within a quadrant."""
+    graph_x = x + GRAPH_PADDING
+    graph_y = y + GRAPH_LABEL_HEIGHT + 6
+    graph_w = QUADRANT_SIZE - (2 * GRAPH_PADDING)
+    graph_h = QUADRANT_SIZE - (graph_y - y) - GRAPH_PADDING
+
+    epd.text(label, x + 6, y + 6, 0x00)
+    if not values:
+        epd.text("No data", x + 20, y + 46, 0x00)
+        return
+
+    if len(values) == 1:
+        mid_y = graph_y + (graph_h // 2)
+        epd.hline(graph_x, mid_y, graph_w, 0x00)
+        return
+
+    min_value = min(values)
+    max_value = max(values)
+    span = max_value - min_value
+    if span < 0.5:
+        min_value -= 0.25
+        max_value += 0.25
+        span = max_value - min_value
+
+    last_x = graph_x
+    last_y = graph_y + graph_h - 1 - int(((values[0] - min_value) * (graph_h - 2)) / span)
+    for index in range(1, len(values)):
+        next_x = graph_x + int((index * (graph_w - 1)) / (len(values) - 1))
+        next_y = graph_y + graph_h - 1 - int(((values[index] - min_value) * (graph_h - 2)) / span)
+        epd.line(last_x, last_y, next_x, next_y, 0x00)
+        last_x = next_x
+        last_y = next_y
+
+
+def split_history(readings):
+    """Split combined reading tuples into per-signal history arrays."""
+    temperatures = []
+    humidities = []
+    for temperature, humidity in readings:
+        temperatures.append(temperature)
+        humidities.append(humidity)
+    return temperatures, humidities
+
+
+def draw_reading(epd, temperature, humidity, history):
+    """Render the quadrant-based temperature and humidity dashboard."""
     epd.clear(0xFF)
-
-    epd.fill_rect(0, 0, epd.WIDTH, 28, 0x00)
-    epd.text("Pico TH Monitor", 36, 10, 0xFF)
-
-    epd.text("Temperature", 12, 48, 0x00)
-    epd.text("{:.1f} C".format(temperature), 24, 66, 0x00)
-
-    epd.text("Humidity", 12, 108, 0x00)
-    epd.text("{:.1f} %RH".format(humidity), 24, 126, 0x00)
-
-    epd.hline(12, 160, 176, 0x00)
-    epd.text("Updated", 12, 172, 0x00)
-    epd.text(status, 92, 172, 0x00)
-
+    temperatures, humidities = split_history(history)
+    draw_grid(epd)
+    draw_big_value(epd, 0, 0, temperature, "T(C)", "C")
+    draw_graph(epd, MID_X, 0, temperatures, "T", "C")
+    draw_graph(epd, 0, MID_Y, humidities, "H", "%")
+    draw_big_value(epd, MID_X, MID_Y, humidity, "H(%)", "%")
     epd.display()
 
 
@@ -101,7 +238,8 @@ def main():
         if sensor is None:
             sensor = SHT31(i2c)
         temperature, humidity = sensor.read()
-        refresh_display(epd, led, draw_reading, temperature, humidity)
+        history = append_history(temperature, humidity)
+        refresh_display(epd, led, draw_reading, temperature, humidity, history)
     except Exception as exc:
         scan = i2c.scan()
         detail = "I2C: none"
