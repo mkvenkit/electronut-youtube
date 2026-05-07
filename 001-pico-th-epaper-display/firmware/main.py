@@ -202,9 +202,9 @@ def startup_wait(led, delay_ms):
     led_state = 0
     while time.ticks_diff(end_time, time.ticks_ms()) > 0:
         led_state = 0 if led_state else 1
-        led.value(led_state)
+        #led.value(led_state)
         time.sleep_ms(150)
-    led.value(0)
+    #led.value(0)
 
 
 def main():
